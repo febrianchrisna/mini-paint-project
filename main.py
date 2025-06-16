@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, colorchooser, simpledialog
 import math
 from typing import List, Optional, Tuple
-from shapes import Shape, Line, Circle, Rectangle, Polygon, Ellipse, Triangle, Pentagon, Hexagon
+from shapes import Shape, Line, Circle, Rectangle, Polygon, Ellipse, Triangle, Pentagon, Hexagon, Sketch
 from canvas import DrawingCanvas
 
 class PaintApp:
@@ -59,7 +59,7 @@ class PaintApp:
         ttk.Label(toolbar, text="Tools:").pack(side=tk.LEFT, padx=5)
         
         self.tool_var = tk.StringVar(value="pointer")
-        tools = [("Pointer", "pointer"), ("Line", "line"), ("Circle", "circle"), 
+        tools = [("Pointer", "pointer"), ("Draw", "draw"), ("Line", "line"), ("Circle", "circle"), 
                 ("Rectangle", "rectangle"), ("Ellipse", "ellipse"), ("Triangle", "triangle"),
                 ("Pentagon", "pentagon"), ("Hexagon", "hexagon"), ("Polygon", "polygon")]
         

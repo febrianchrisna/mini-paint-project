@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import simpledialog
 import math
 from typing import Optional, Tuple, List
-from shapes import Shape, Line, Circle, Rectangle, Polygon, Ellipse, Triangle, Pentagon, Hexagon
+from shapes import Shape, Line, Circle, Rectangle, Polygon, Ellipse, Triangle, Pentagon, Hexagon, Sketch
 
 class DrawingCanvas(tk.Canvas):
     def __init__(self, parent, app):
@@ -17,6 +17,7 @@ class DrawingCanvas(tk.Canvas):
         self.start_y = 0
         self.temp_shape = None
         self.polygon_points = []
+        self.sketch_points = []  # For freehand drawing
         
         # Move state
         self.moving = False
@@ -64,6 +65,12 @@ class DrawingCanvas(tk.Canvas):
                 self.app.selected_shape = None
                 
             self.redraw()
+            return
+        
+        # For drawing tool, start tracking points
+        if self.current_tool == "draw":
+            self.drawing = True
+            self.sketch_points = [(x, y)]
             return
             
         # Check if clicking on existing shape for selection
@@ -129,8 +136,14 @@ class DrawingCanvas(tk.Canvas):
             self.move_start_y = y
             self.redraw()
         elif self.drawing:
-            self.redraw()
-            self.draw_preview_shape(self.start_x, self.start_y, x, y)
+            if self.current_tool == "draw":
+                # Add point to sketch and draw line
+                self.sketch_points.append((x, y))
+                self.redraw()
+                self.draw_sketch_preview()
+            else:
+                self.redraw()
+                self.draw_preview_shape(self.start_x, self.start_y, x, y)
             
     def on_release(self, event):
         if self.moving:
@@ -145,6 +158,18 @@ class DrawingCanvas(tk.Canvas):
         x, y = event.x, event.y
         self.drawing = False
         
+        # For sketch/draw tool, create a sketch shape
+        if self.current_tool == "draw":
+            if len(self.sketch_points) > 1:
+                shape = Sketch(self.sketch_points)
+                shape.line_color = self.app.line_color
+                shape.line_width = self.app.line_width
+                shape.line_style = self.app.line_style
+                self.app.shapes.append(shape)
+                self.sketch_points = []
+                self.redraw()
+            return
+            
         # Create the actual shape with current properties
         shape = self.create_shape(self.start_x, self.start_y, x, y)
         if shape:
@@ -244,6 +269,17 @@ class DrawingCanvas(tk.Canvas):
         for x, y in self.polygon_points:
             self.create_oval(x-3, y-3, x+3, y+3, fill="red", tags="preview")
             
+    def draw_sketch_preview(self):
+        if len(self.sketch_points) < 2:
+            return
+            
+        # Draw lines between consecutive points
+        for i in range(len(self.sketch_points) - 1):
+            x1, y1 = self.sketch_points[i]
+            x2, y2 = self.sketch_points[i + 1]
+            self.create_line(x1, y1, x2, y2, fill=self.app.line_color, 
+                           width=self.app.line_width, tags="preview")
+            
     def find_shape_at_point(self, x, y) -> Optional[Shape]:
         # Search from top to bottom (last drawn first)
         for shape in reversed(self.app.shapes):
@@ -261,6 +297,10 @@ class DrawingCanvas(tk.Canvas):
         # Draw polygon points if in polygon mode
         if self.current_tool == "polygon":
             self.draw_polygon_preview()
+        
+        # Draw sketch preview if in draw mode
+        if self.current_tool == "draw" and self.sketch_points:
+            self.draw_sketch_preview()
             
         # Show instructions
         self.create_text(10, 10, anchor="nw", 

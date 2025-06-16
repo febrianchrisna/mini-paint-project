@@ -725,3 +725,98 @@ class Polygon(Shape):
             new_y = y + shear_y * x
             new_points.append((new_x, new_y))
         self.points = new_points
+
+class Sketch(Shape):
+    def __init__(self, points: List[Tuple[float, float]]):
+        super().__init__()
+        self.points = points[:]
+        
+    def draw(self, canvas):
+        if len(self.points) < 2:
+            return
+            
+        color = "red" if self.selected else self.line_color
+        
+        # Draw lines between consecutive points to create the sketch
+        for i in range(len(self.points) - 1):
+            x1, y1 = self.points[i]
+            x2, y2 = self.points[i + 1]
+            canvas.create_line(x1, y1, x2, y2, fill=color, width=self.line_width, tags="shape")
+            
+    def contains_point(self, x, y) -> bool:
+        # Check if point is near any segment of the sketch
+        for i in range(len(self.points) - 1):
+            x1, y1 = self.points[i]
+            x2, y2 = self.points[i + 1]
+            
+            if x1 == x2 and y1 == y2:
+                continue
+                
+            A = y2 - y1
+            B = x1 - x2
+            C = x2 * y1 - x1 * y2
+            
+            if A == 0 and B == 0:
+                continue
+                
+            distance = abs(A * x + B * y + C) / math.sqrt(A * A + B * B)
+            if distance < 5:
+                return True
+        return False
+        
+    def get_bounds(self) -> Tuple[float, float, float, float]:
+        if not self.points:
+            return (0, 0, 0, 0)
+        xs = [p[0] for p in self.points]
+        ys = [p[1] for p in self.points]
+        return (min(xs), min(ys), max(xs), max(ys))
+        
+    def translate(self, dx, dy):
+        self.points = [(x + dx, y + dy) for x, y in self.points]
+        
+    def scale(self, factor, center_x=None, center_y=None):
+        if center_x is None or center_y is None:
+            xs = [p[0] for p in self.points]
+            ys = [p[1] for p in self.points]
+            center_x = sum(xs) / len(xs)
+            center_y = sum(ys) / len(ys)
+            
+        self.points = [(center_x + (x - center_x) * factor, 
+                        center_y + (y - center_y) * factor) 
+                       for x, y in self.points]
+                       
+    def rotate(self, angle, center_x=None, center_y=None):
+        if center_x is None or center_y is None:
+            xs = [p[0] for p in self.points]
+            ys = [p[1] for p in self.points]
+            center_x = sum(xs) / len(xs)
+            center_y = sum(ys) / len(ys)
+            
+        cos_a = math.cos(angle)
+        sin_a = math.sin(angle)
+        
+        new_points = []
+        for x, y in self.points:
+            dx = x - center_x
+            dy = y - center_y
+            new_x = center_x + dx * cos_a - dy * sin_a
+            new_y = center_y + dx * sin_a + dy * cos_a
+            new_points.append((new_x, new_y))
+            
+        self.points = new_points
+        
+    def copy(self):
+        new_sketch = Sketch(self.points[:])
+        new_sketch.line_color = self.line_color
+        new_sketch.fill_color = self.fill_color
+        new_sketch.line_width = self.line_width
+        new_sketch.line_style = self.line_style
+        return new_sketch
+        
+    def shear(self, shear_x, shear_y):
+        new_points = []
+        for x, y in self.points:
+            new_x = x + shear_x * y
+            new_y = y + shear_y * x
+            new_points.append((new_x, new_y))
+        self.points = new_points
