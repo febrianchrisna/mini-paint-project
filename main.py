@@ -130,6 +130,12 @@ class PaintApp:
         
     def on_right_click(self, event):
         """Handle right click for starting move operation"""
+        # First check if we're in polygon mode - if so, let the canvas handle it
+        if self.current_tool == "polygon":
+            # Call the canvas's right-click handler
+            self.canvas.on_right_click(event)
+            return
+            
         if self.current_tool != "pointer":
             return
             
